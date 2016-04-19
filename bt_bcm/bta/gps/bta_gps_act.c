@@ -14,8 +14,9 @@ const char * SOCKET_PATH = "/data/gps/brcm_gps_unix_socket";
 
 UINT8 tail_8957[];
 char unk_712[511];
-int taillen_8958, fd;
-int hservSocket, clientfd, ctlsocket;
+int taillen_8958;
+int hservSocket, clientfd;
+int ctlsocket = -1;
 pthread_t  ServThreadID;
 bool bReadyToQuit, bExit;
 
@@ -47,7 +48,7 @@ int receiveIncomingData(int fd)
   int result; // r0@17
   //int *v14; // [sp+4h] [bp-23Ch]@1
   char src[256]; // [sp+14h] [bp-22Ch]@6
-  char v16; // [sp+114h] [bp-12Ch]@12
+  UINT8 v16; // [sp+114h] [bp-12Ch]@12
   uint8_t v17[3]; // [sp+115h] [bp-12Bh]@10
 
   //v1 = fd;
@@ -101,7 +102,7 @@ int receiveIncomingData(int fd)
   return result;
 }
 
-static void * wait_4_command_thread()
+void * wait_4_command_thread()
 {
   uint8_t *v1; // r4@3
   unsigned int v2; // r6@3
@@ -110,7 +111,7 @@ static void * wait_4_command_thread()
   uint8_t *v5; // r6@3
   int v6; // r2@6
   int *v7; // r3@15
-  int v8; // r2@19
+  int rcvLen; // r2@19
   const char *v9; // r1@11
   int result; // r0@34
   int iSizePoll = 16; // [sp+0h] [bp-50h]@1
@@ -151,7 +152,7 @@ LABEL_10:
     
     fds[1].events = 73;
     fds[1].revents = 0;
-    fds[1].fd = -1;
+    fds[1].fd = ctlsocket;
     
     if ( poll(fds, 2, -1) == -1 )
     {
@@ -167,20 +168,14 @@ LABEL_27:
         1283,
         "poll result : fds[0].revents(0x%4x), fds[1].revents(0x%4x)\n",
         fds[0].revents,
-        fds[1].revents,
-        iSizePoll,
-        fds[0].fd,
-        fds[0].events,
-        fds[1].fd,
-        fds[1].events);
+        fds[1].revents);
          
     if ( fds[0].revents & 1 )
     {
-      v8 = receiveIncomingData(clientfd);
-      if ( v8 <= 0 )
+      rcvLen = receiveIncomingData(clientfd);
+      if ( rcvLen <= 0 )
       {
-        if ( btif_trace_level > iLevelMessages )
-          LogMsg(1283, "rcvLen = %d\n", v8);
+        if ( btif_trace_level > iLevelMessages )  LogMsg(1283, "rcvLen = %d\n", rcvLen);
         v7 = &clientfd;
         goto LABEL_27;
       }
@@ -306,7 +301,7 @@ int stop_tcp_server()
 
   if ( btif_trace_level > 3 ) LogMsg(1283, "[GPS] stop_tcp_server");
   BTM_RegisterForVSEvents(bta_gps_rcv_vse_cback, 0);
-  write(fd, &buf, 1);
+  write(clientfd, &buf, 1);
   if ( hservSocket > 0 )
   {
     shutdown(hservSocket, 2);
@@ -315,17 +310,17 @@ int stop_tcp_server()
   pthread_join(ServThreadID, 0);
   if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "%s", "uninitCtrlSocekt");
   
-  /*if ( ctlSocket > 0 )
+  if ( ctlSocket > 0 )
   {
     close(ctlSocket);
     ctlSocket = -1;
-  }*/
+  }
   
-  if ( clientfd > 0 )
+  /*if ( clientfd > 0 )
   {
     close(clientfd);
     clientfd = -1;
-  }
+  }*/
   
   if ( btif_trace_level > iLevelMessages )  LogMsg(1283, "stop_tcp_server exit...");
   

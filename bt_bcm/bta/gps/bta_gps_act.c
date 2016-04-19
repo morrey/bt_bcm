@@ -12,25 +12,22 @@
 
 const char * SOCKET_PATH = "/data/gps/brcm_gps_unix_socket";
 
-char tail_8957[];
+UINT8 tail_8957[];
 char unk_712[511];
 int taillen_8958, fd;
-int hservSocket, clientfd, ctlSocket;
+int hservSocket, clientfd, ctlsocket;
 pthread_t  ServThreadID;
 bool bReadyToQuit, bExit;
-//int _stack_chk_guard; // weak
 
 const int iLevelMessages = 1;  //default 3
 
 void bta_gps_cback() {}
 
-char *getUnixSocketPath()
+const char *getUnixSocketPath()
 {
-  char *result = SOCKET_PATH;
+  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] Unix Socket Path %s\n", SOCKET_PATH);
   
-  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] Unix Socket Path %s\n", result);
-  
-  return result;
+  return SOCKET_PATH;
 }
 
 int receiveIncomingData(int fd)
@@ -43,7 +40,7 @@ int receiveIncomingData(int fd)
   char *v6; // r5@9
   char *v7; // r11@10
   char *v8; // r7@10
-  int v9; // r4@10
+  UINT8 v9; // r4@10
   uint8_t *v10; // r12@10
   int v11; // t1@11
   uint8_t *v12; // ST00_4@12
@@ -63,10 +60,8 @@ int receiveIncomingData(int fd)
     if ( result <= 0 ) break;
     if ( taillen_8958 )
     {
-      for ( i = 0; (uint8_t)src[i] != 252; ++i )
-        ;
-      if ( btif_trace_level > iLevelMessages )
-        LogMsg(1283, "tail data length = %d, new data length = %d\n");
+      for ( i = 0; (uint8_t)src[i] != 252; ++i );
+      if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tail data length = %d, new data length = %d\n");
       v3 = v3 - i - 1;
       v4 = taillen_8958 + 1 + i;
       v5 = i + 1;
@@ -74,7 +69,7 @@ int receiveIncomingData(int fd)
       memcpy(&tail_8957[taillen_8958 + 1], src, v5);
       taillen_8958 = 0;
       v6 = &src[v5];
-      BTM_VendorSpecificCommand(64649, (uint8_t)(tail_8957[0] + 1), tail_8957, bta_gps_cback);
+      BTM_VendorSpecificCommand(64649, (tail_8957[0] + 1), tail_8957, bta_gps_cback);
     }
     v7 = v6;
     v8 = v6;
@@ -89,7 +84,7 @@ int receiveIncomingData(int fd)
         v12 = v10;
         __memcpy_chk(v10, v6, v9, 254);
         v16 = v9;
-        BTM_VendorSpecificCommand(64649, (uint8_t)(v9 + 1), &v16, bta_gps_cback);
+        BTM_VendorSpecificCommand(64649, (v9 + 1), &v16, bta_gps_cback);
         v10 = v12;
         v6 = v8;
         v9 = 0;
@@ -108,7 +103,6 @@ int receiveIncomingData(int fd)
 
 static void * wait_4_command_thread()
 {
-  //int *v0; // r7@1
   uint8_t *v1; // r4@3
   unsigned int v2; // r6@3
   bool v3; // cf@3
@@ -123,11 +117,12 @@ static void * wait_4_command_thread()
   struct pollfd fds[2]; // [sp+4h] [bp-4Ch]@12
   int v13; // [sp+Ch] [bp-44h]@12
   int v14; // [sp+10h] [bp-40h]@12
-  int v15; // [sp+12h] [bp-3Eh]@12
-  struct sockaddr addr; // [sp+14h] [bp-3Ch]@6
+  int v15; int v11 = 16;
+  struct sockaddr addr; 
+  socklen_t peer_addr_size = 16;
   
   listen(hservSocket, 1);
-  while ( 1 )
+  while ( true )
   {
 LABEL_31:
     if ( bExit )
@@ -143,7 +138,7 @@ LABEL_10:
     if ( hservSocket <= 0 ) goto LABEL_34;
 
     if ( btif_trace_level > iLevelMessages)  LogMsg(1283, "TCP server accept ...\n");
-    clientfd = accept(hservSocket, &addr, (socklen_t *)&v11);
+    clientfd = accept(hservSocket, &addr, &peer_addr_size);
     if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "TCP server accept clientfd (%d)\n", clientfd);
     if ( clientfd != -1 )  break;
     if ( bExit )  goto LABEL_10;
@@ -156,7 +151,7 @@ LABEL_10:
     
     fds[1].events = 73;
     fds[1].revents = 0;
-    fds[1].fd = ctlSocket;
+    fds[1].fd = -1;
     
     if ( poll(fds, 2, -1) == -1 )
     {
@@ -172,12 +167,12 @@ LABEL_27:
         1283,
         "poll result : fds[0].revents(0x%4x), fds[1].revents(0x%4x)\n",
         fds[0].revents,
-        fds[1].revents,,
+        fds[1].revents,
         iSizePoll,
         fds[0].fd,
         fds[0].events,
         fds[1].fd,
-        fds[1].events;
+        fds[1].events);
          
     if ( fds[0].revents & 1 )
     {
@@ -198,7 +193,7 @@ LABEL_27:
       goto LABEL_27;
     }
   }
-  while ( !(v15 & 1) );
+  while ( !(fds[1].revents & 1) );
   if ( btif_trace_level > iLevelMessages )
   {
     v9 = "terminate thread from socket pair\n";
@@ -206,11 +201,10 @@ LABEL_33:
     LogMsg(1283, v9);
   }
 LABEL_34:
-  result = 0;
   return NULL;
 }
 
-int bta_gps_rcv_vse_cback(int result, int a2) 
+void bta_gps_rcv_vse_cback(UINT8 result, UINT8 *a2) 
 {
   int iLen = result; 
   if ( result == 16 )
@@ -219,7 +213,6 @@ int bta_gps_rcv_vse_cback(int result, int a2)
     if ( clientfd > 0 )
     {
       //send(int sockfd, const void *buf, size_t len, int flags)
-      //result = send(clientfd, (const void *)(a2 + 1), v2 - 1, 0) + 1;
       result = send(clientfd, (const void *)(a2 + 1), iLen - 1, 0) + 1;
       if ( !result )
       {
@@ -229,7 +222,6 @@ int bta_gps_rcv_vse_cback(int result, int a2)
       }
     }
   }
-  return result;
 }
 
 signed int getServerPort()
@@ -241,7 +233,7 @@ int start_tcp_server()
 {
   uint8_t *v2; // r4@1
   int v3; // r0@4
-  int v4; // r0@6
+  const char * v4; // r0@6
   int v5; // r0@6
   int v6; // r0@6
   int v7; // r5@6
@@ -258,12 +250,13 @@ int start_tcp_server()
   int result; // r0@16
   int optval; // [sp+8h] [bp-90h]@1
   signed int v20; // [sp+Ch] [bp-8Ch]@6
-  int v21; // [sp+Eh] [bp-8Ah]@6
+  const char * v21; // [sp+Eh] [bp-8Ah]@6
   int v22; // [sp+7Ch] [bp-1Ch]@1
+  
+  struct sockaddr addr; 
 
   optval = 1;
   bExit = 0;
-  v2 = btif_trace_level;
   if ( hservSocket > 0 )
   {
     if ( btif_trace_level > iLevelMessages )
@@ -275,19 +268,16 @@ LABEL_16:
   hservSocket = socket(1, 1, 0);
   v3 = setsockopt(hservSocket, 1, 2, &optval, 4);
   if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, v3);
-  v20 = 1;
-  v4 = getUnixSocketPath();
-  __memcpy_chk(&v21, v4, 108);
-  unlink((const char *)&v21);
-  v5 = __strlen_chk(&v21, 108);
-  v6 = bind(hservSocket, (const struct sockaddr *)&v20, v5 + 2);
-  v7 = v6;
+  addr.sa_family = 1;
+
+  __strcpy_chk(addr.sa_data, getUnixSocketPath(), 108, optval);
+  unlink(addr.sa_data);
+  v6 = bind(hservSocket, &addr, __strlen_chk(addr.sa_data, 108) + 2);
   if ( v6 != -1 )
   {
     v9 = getUnixSocketPath();
     v10 = chown(v9, 0xFFFFFFFF, 0xBC0u);
-    v11 = v10;
-    if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chown %d, %s\n", v11, strerror(__errno()));
+    if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chown %d, %s\n", v10, strerror(__errno()));
     
     v14 = getUnixSocketPath();
     v15 = chmod(v14, 0x1F8u);
@@ -309,9 +299,8 @@ LABEL_18:
 
 int stop_tcp_server()
 {
-  //uint8_t *v3; // r4@1
-  int v5[120];  // [sp+4h] [bp-14h]@1
-  int v6; // [sp+8h] [bp-10h]@1
+  int v5[120];  
+  int v6; 
   
   char buf = 120;
 
@@ -326,16 +315,16 @@ int stop_tcp_server()
   pthread_join(ServThreadID, 0);
   if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "%s", "uninitCtrlSocekt");
   
-  if ( ctlSocket > 0 )
+  /*if ( ctlSocket > 0 )
   {
     close(ctlSocket);
     ctlSocket = -1;
-  }
+  }*/
   
-  if ( fd > 0 )
+  if ( clientfd > 0 )
   {
-    close(fd);
-    fd = -1;
+    close(clientfd);
+    clientfd = -1;
   }
   
   if ( btif_trace_level > iLevelMessages )  LogMsg(1283, "stop_tcp_server exit...");

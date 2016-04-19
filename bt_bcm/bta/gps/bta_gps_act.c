@@ -35,7 +35,7 @@ char *getUnixSocketPath()
 
 int receiveIncomingData(int fd)
 {
-  int v1; // r9@1
+  //int v1; // r9@1
   int i; // r4@4
   int v3; // r8@9
   int v4; // r3@9
@@ -52,18 +52,15 @@ int receiveIncomingData(int fd)
   char src[256]; // [sp+14h] [bp-22Ch]@6
   char v16; // [sp+114h] [bp-12Ch]@12
   uint8_t v17[3]; // [sp+115h] [bp-12Bh]@10
-  //int v18; // [sp+214h] [bp-2Ch]@1
 
-  v1 = fd;
-  //v14 = &_stack_chk_guard;
-  //v18 = _stack_chk_guard;
-  while ( 1 )
+  //v1 = fd;
+
+  while ( true )
   {
     v6 = src;
-    result = recv(v1, src, 0xFFu, 0);
+    result = recv(fd, src, 0xFFu, 0);
     v3 = result;
-    if ( result <= 0 )
-      break;
+    if ( result <= 0 ) break;
     if ( taillen_8958 )
     {
       for ( i = 0; (uint8_t)src[i] != 252; ++i )
@@ -106,8 +103,6 @@ int receiveIncomingData(int fd)
         LogMsg(1283, "tail data length = %d\n", v9);
     }
   }
-  //if ( v18 != *v14 )
-  //  _stack_chk_fail(result);
   return result;
 }
 
@@ -191,7 +186,7 @@ LABEL_27:
       v8 = receiveIncomingData(clientfd);
       if ( v8 <= 0 )
       {
-        if ( btif_trace_level > 3 )
+        if ( btif_trace_level > iLevelMessages )
           LogMsg(1283, "rcvLen = %d\n", v8);
         v7 = &clientfd;
         goto LABEL_27;
@@ -199,14 +194,14 @@ LABEL_27:
     }
     if ( fds[0].revents & 0x10 )
     {
-      if ( btif_trace_level > 3 )
+      if ( btif_trace_level > iLevelMessages )
         LogMsg(1283, "fds[0].revents & POLLHUP");
       v7 = &clientfd;
       goto LABEL_27;
     }
   }
   while ( !(v15 & 1) );
-  if ( btif_trace_level > 3 )
+  if ( btif_trace_level > iLevelMessages )
   {
     v9 = "terminate thread from socket pair\n";
 LABEL_33:
@@ -219,24 +214,21 @@ LABEL_34:
 
 int bta_gps_rcv_vse_cback(int result, int a2) 
 {
-  int v2; // r2@1
-  int *v3; // r0@5
-  char *v4; // r0@5
-
-  v2 = result;
-  if ( *(uint8_t *)a2 == 16 )
+  int iLen = result; 
+  if ( result == 16 )
   {
     result = clientfd;
     if ( clientfd > 0 )
     {
-      result = send(clientfd, (const void *)(a2 + 1), v2 - 1, 0) + 1;
+      //send(int sockfd, const void *buf, size_t len, int flags)
+      //result = send(clientfd, (const void *)(a2 + 1), v2 - 1, 0) + 1;
+      result = send(clientfd, (const void *)(a2 + 1), iLen - 1, 0) + 1;
       if ( !result )
       {
         if ( btif_trace_level > iLevelMessages )
         {
-          v3 = __errno();
-          v4 = strerror(*v3);
-          LogMsg(1283, "send failed %s\n", v4);
+          char * strErr = strerror(__errno());
+          LogMsg(1283, "send failed %s\n", strErr);
         }
         result = -1;
         clientfd = -1;
@@ -253,8 +245,6 @@ signed int getServerPort()
 
 int start_tcp_server()
 {
-  //int v0; // r1@1
-  //int *v1; // r8@1
   uint8_t *v2; // r4@1
   int v3; // r0@4
   int v4; // r0@6
@@ -282,7 +272,7 @@ int start_tcp_server()
   v2 = btif_trace_level;
   if ( hservSocket > 0 )
   {
-    if ( btif_trace_level > 3 )
+    if ( btif_trace_level > iLevelMessages )
       LogMsg(1283, "[GPS] tcp service is already up\n");
 LABEL_16:
     result = 0;
@@ -290,7 +280,7 @@ LABEL_16:
   }
   hservSocket = socket(1, 1, 0);
   v3 = setsockopt(hservSocket, 1, 2, &optval, 4);
-  if ( btif_trace_level > 3 ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, v3);
+  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, v3);
   v20 = 1;
   v4 = getUnixSocketPath();
   __memcpy_chk(&v21, v4, 108);

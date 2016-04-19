@@ -267,7 +267,7 @@ LABEL_16:
 
   __strcpy_chk(addr.sa_data, getUnixSocketPath(), 108, optval);
   unlink(addr.sa_data);
-  v6 = bind(hservSocket, &addr, __strlen_chk(addr.sa_data, 108) + 2);
+  v6 = bind(hservSocket, (struct sockaddr *)&addr, __strlen_chk(addr.sa_data, 108) + 2);
   if ( v6 != -1 )
   {
     v9 = getUnixSocketPath();

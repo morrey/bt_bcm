@@ -223,11 +223,7 @@ int bta_gps_rcv_vse_cback(int result, int a2)
       result = send(clientfd, (const void *)(a2 + 1), iLen - 1, 0) + 1;
       if ( !result )
       {
-        if ( btif_trace_level > iLevelMessages )
-        {
-          char * strErr = strerror(__errno());
-          LogMsg(1283, "send failed %s\n", strErr);
-        }
+        if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "send failed %s\n", strerror(__errno()));
         result = -1;
         clientfd = -1;
       }
@@ -291,19 +287,13 @@ LABEL_16:
     v9 = getUnixSocketPath();
     v10 = chown(v9, 0xFFFFFFFF, 0xBC0u);
     v11 = v10;
-    if ( btif_trace_level > iLevelMessages )
-    {
-      v12 = __errno();
-      v13 = strerror(*v12);
-      LogMsg(1283, "[GPS] chown %d, %s\n", v11, v13);
-    }
+    if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chown %d, %s\n", v11, strerror(__errno()));
+    
     v14 = getUnixSocketPath();
     v15 = chmod(v14, 0x1F8u);
     if ( btif_trace_level > iLevelMessages )
     {
-      v16 = __errno();
-      v17 = strerror(*v16);
-      LogMsg(1283, "[GPS] chmod %d\n", v15, v17);
+      LogMsg(1283, "[GPS] chmod %d\n", v15, strerror(__errno()));
     }
     pthread_create(&ServThreadID, NULL, wait_4_command_thread, NULL);
     if ( btif_trace_level > iLevelMessages )
@@ -311,11 +301,7 @@ LABEL_16:
     BTM_RegisterForVSEvents(bta_gps_rcv_vse_cback, 1);
     goto LABEL_16;
   }
-  if ( btif_trace_level > iLevelMessages )
-  {
-    v8 = __errno();
-    LogMsg(1283, "tcp bind socket failed errno = %d\n", *v8);
-  }
+  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp bind socket failed errno = %d\n", __errno());
   result = v7;
 LABEL_18:
   return result;

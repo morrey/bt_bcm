@@ -20,13 +20,15 @@ pthread_t  ServThreadID;
 bool bReadyToQuit, bExit;
 //int _stack_chk_guard; // weak
 
+const int iLevelMessages = 1;  //default 3
+
 void bta_gps_cback() {}
 
 char *getUnixSocketPath()
 {
   char *result = SOCKET_PATH;
   
-  if ( btif_trace_level > 3 ) LogMsg(1283, "[GPS] Unix Socket Path %s\n", result);
+  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] Unix Socket Path %s\n", result);
   
   return result;
 }
@@ -66,7 +68,7 @@ int receiveIncomingData(int fd)
     {
       for ( i = 0; (uint8_t)src[i] != 252; ++i )
         ;
-      if ( btif_trace_level > 3 )
+      if ( btif_trace_level > iLevelMessages )
         LogMsg(1283, "tail data length = %d, new data length = %d\n");
       v3 = v3 - i - 1;
       v4 = taillen_8958 + 1 + i;
@@ -100,7 +102,7 @@ int receiveIncomingData(int fd)
     {
       __memcpy_chk(&unk_712, v6, v9, 511);
       taillen_8958 = v9;
-      if ( btif_trace_level > 3 )
+      if ( btif_trace_level > iLevelMessages )
         LogMsg(1283, "tail data length = %d\n", v9);
     }
   }
@@ -140,7 +142,7 @@ LABEL_31:
     if ( bExit )
     {
 LABEL_10:
-      if ( btif_trace_level > 3 )
+      if ( btif_trace_level > iLevelMessages )
       {
         v9 = "wait_4_command_thread exit\n";
         goto LABEL_33;
@@ -149,10 +151,10 @@ LABEL_10:
     }
     if ( hservSocket <= 0 ) goto LABEL_34;
 
-    if ( btif_trace_level > 3 )  LogMsg(1283, "TCP server accept ...\n");
+    if ( btif_trace_level > iLevelMessages)  LogMsg(1283, "TCP server accept ...\n");
     v6 = accept(hservSocket, &addr, (socklen_t *)&v11);
     clientfd = v6;
-    if ( btif_trace_level > 3 ) LogMsg(1283, "TCP server accept clientfd (%d)\n", v6);
+    if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "TCP server accept clientfd (%d)\n", v6);
     if ( clientfd != -1 )  break;
     if ( bExit )  goto LABEL_10;
   }
@@ -166,14 +168,14 @@ LABEL_10:
     fds[0].fd = clientfd;
     if ( poll(fds, 2, -1) == -1 )
     {
-      if ( btif_trace_level > 3 )
+      if ( btif_trace_level > iLevelMessages )
         LogMsg(1283, "poll failed\n");
       v7 = &clientfd;
 LABEL_27:
       *v7 = -1;
       goto LABEL_31;
     }
-    if ( btif_trace_level > 3 )
+    if ( btif_trace_level > iLevelMessages )
       LogMsg(
         1283,
         "poll result : fds[0].revents(0x%4x), fds[1].revents(0x%4x)\n",
@@ -230,7 +232,7 @@ int bta_gps_rcv_vse_cback(int result, int a2)
       result = send(clientfd, (const void *)(a2 + 1), v2 - 1, 0) + 1;
       if ( !result )
       {
-        if ( btif_trace_level > 3 )
+        if ( btif_trace_level > iLevelMessages )
         {
           v3 = __errno();
           v4 = strerror(*v3);
@@ -287,7 +289,7 @@ LABEL_16:
     goto LABEL_18;
   }
   hservSocket = socket(1, 1, 0);
-  v3 = setsockopt(hservSocket, 1, 2, &optval, 4u);
+  v3 = setsockopt(hservSocket, 1, 2, &optval, 4);
   if ( btif_trace_level > 3 ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, v3);
   v20 = 1;
   v4 = getUnixSocketPath();
@@ -301,7 +303,7 @@ LABEL_16:
     v9 = getUnixSocketPath();
     v10 = chown(v9, 0xFFFFFFFF, 0xBC0u);
     v11 = v10;
-    if ( btif_trace_level > 3 )
+    if ( btif_trace_level > iLevelMessages )
     {
       v12 = __errno();
       v13 = strerror(*v12);
@@ -309,19 +311,19 @@ LABEL_16:
     }
     v14 = getUnixSocketPath();
     v15 = chmod(v14, 0x1F8u);
-    if ( btif_trace_level > 3 )
+    if ( btif_trace_level > iLevelMessages )
     {
       v16 = __errno();
       v17 = strerror(*v16);
       LogMsg(1283, "[GPS] chmod %d\n", v15, v17);
     }
     pthread_create(&ServThreadID, NULL, wait_4_command_thread, NULL);
-    if ( btif_trace_level > 3 )
+    if ( btif_trace_level > iLevelMessages )
       LogMsg(1283, "tcp listening thread id = %ld\n", ServThreadID);
     BTM_RegisterForVSEvents(bta_gps_rcv_vse_cback, 1);
     goto LABEL_16;
   }
-  if ( btif_trace_level > 3 )
+  if ( btif_trace_level > iLevelMessages )
   {
     v8 = __errno();
     LogMsg(1283, "tcp bind socket failed errno = %d\n", *v8);
@@ -348,7 +350,7 @@ int stop_tcp_server()
     hservSocket = -1;
   }
   pthread_join(ServThreadID, 0);
-  if ( btif_trace_level > 3 ) LogMsg(1283, "%s", "uninitCtrlSocekt");
+  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "%s", "uninitCtrlSocekt");
   
   if ( ctlSocket > 0 )
   {
@@ -362,7 +364,7 @@ int stop_tcp_server()
     fd = -1;
   }
   
-  if ( btif_trace_level > 3 )  LogMsg(1283, "stop_tcp_server exit...");
+  if ( btif_trace_level > iLevelMessages )  LogMsg(1283, "stop_tcp_server exit...");
   
   return 0;
 }
@@ -377,7 +379,7 @@ int bta_gps_disable()
 }
 int bta_gps_sm_execute(BT_HDR *p_msg)
 {	
-  if ( appl_trace_level > 3 ) LogMsg(1283, "bta_gps_sm_execute event:0x%x", p_msg->event);
+  if ( appl_trace_level > iLevelMessages ) LogMsg(1283, "bta_gps_sm_execute event:0x%x", p_msg->event);
   
   if ( p_msg->event == 9472 )
   {

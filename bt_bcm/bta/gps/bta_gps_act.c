@@ -285,8 +285,7 @@ LABEL_16:
       LogMsg(1283, "tcp listening thread id = %ld\n", ServThreadID);
     BTM_RegisterForVSEvents(bta_gps_rcv_vse_cback, 1);
     goto LABEL_16;
-  }
-  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp bind socket failed errno = %d\n", __errno());
+  } elseif ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp bind socket failed errno = %d\n", strerror(__errno()));
   result = v7;
 LABEL_18:
   return result;

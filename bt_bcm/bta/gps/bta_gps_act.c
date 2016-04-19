@@ -119,17 +119,13 @@ static void * wait_4_command_thread()
   int v8; // r2@19
   const char *v9; // r1@11
   int result; // r0@34
-  int v11; // [sp+0h] [bp-50h]@1
+  int iSizePoll = 16; // [sp+0h] [bp-50h]@1
   struct pollfd fds[2]; // [sp+4h] [bp-4Ch]@12
   int v13; // [sp+Ch] [bp-44h]@12
   int v14; // [sp+10h] [bp-40h]@12
   int v15; // [sp+12h] [bp-3Eh]@12
   struct sockaddr addr; // [sp+14h] [bp-3Ch]@6
-  //int v17; // [sp+24h] [bp-2Ch]@1
-
-  v11 = 16;
-  //v0 = &_stack_chk_guard;
- // v17 = _stack_chk_guard;
+  
   listen(hservSocket, 1);
   while ( 1 )
   {
@@ -147,9 +143,8 @@ LABEL_10:
     if ( hservSocket <= 0 ) goto LABEL_34;
 
     if ( btif_trace_level > iLevelMessages)  LogMsg(1283, "TCP server accept ...\n");
-    v6 = accept(hservSocket, &addr, (socklen_t *)&v11);
-    clientfd = v6;
-    if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "TCP server accept clientfd (%d)\n", v6);
+    clientfd = accept(hservSocket, &addr, (socklen_t *)&v11);
+    if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "TCP server accept clientfd (%d)\n", clientfd);
     if ( clientfd != -1 )  break;
     if ( bExit )  goto LABEL_10;
   }
@@ -157,10 +152,12 @@ LABEL_10:
   {
     fds[0].events = 73;
     fds[0].revents = 0;
-    v13 = ctlSocket;
-    v14 = 73;
-    v15 = 0;
     fds[0].fd = clientfd;
+    
+    fds[1].events = 73;
+    fds[1].revents = 0;
+    fds[1].fd = ctlSocket;
+    
     if ( poll(fds, 2, -1) == -1 )
     {
       if ( btif_trace_level > iLevelMessages )
@@ -175,12 +172,13 @@ LABEL_27:
         1283,
         "poll result : fds[0].revents(0x%4x), fds[1].revents(0x%4x)\n",
         fds[0].revents,
-        v15,
-        v11,
+        fds[1].revents,,
+        iSizePoll,
         fds[0].fd,
-        *(char *)&fds[0].events,
-        v13,
-        *(char *)&v14);
+        fds[0].events,
+        fds[1].fd,
+        fds[1].events;
+         
     if ( fds[0].revents & 1 )
     {
       v8 = receiveIncomingData(clientfd);

@@ -310,17 +310,17 @@ int stop_tcp_server()
   pthread_join(ServThreadID, 0);
   if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "%s", "uninitCtrlSocekt");
   
-  if ( ctlSocket > 0 )
+  /*if ( ctlSocket > 0 )
   {
     close(ctlSocket);
     ctlSocket = -1;
-  }
+  }*/
   
-  /*if ( clientfd > 0 )
+  if ( clientfd > 0 )
   {
     close(clientfd);
     clientfd = -1;
-  }*/
+  }
   
   if ( btif_trace_level > iLevelMessages )  LogMsg(1283, "stop_tcp_server exit...");
   

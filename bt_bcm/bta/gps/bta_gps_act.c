@@ -99,7 +99,7 @@ int receiveIncomingData(int fd)
   return result;
 }
 
-void * wait_4_command_thread()
+void wait_4_command_thread()
 {
   uint8_t *v1; // r4@3
   unsigned int v2; // r6@3
@@ -111,13 +111,17 @@ void * wait_4_command_thread()
   int rcvLen; // r2@19
   const char *v9; // r1@11
   int result; // r0@34
-  int iSizePoll = 16; // [sp+0h] [bp-50h]@1
   struct pollfd fds[2]; // [sp+4h] [bp-4Ch]@12
   int v13; // [sp+Ch] [bp-44h]@12
   int v14; // [sp+10h] [bp-40h]@12
   int v15; int v11 = 16;
   struct sockaddr addr; 
   socklen_t peer_addr_size = 16;
+  
+   struct pollfd fds[2]={};
+  struct sockaddr_un peer_addr;
+
+  socklen_t peer_addr_size = sizeof(struct sockaddr_un);
   
   listen(hservSocket, 1);
   while ( true )
@@ -136,7 +140,7 @@ LABEL_10:
     if ( hservSocket <= 0 ) goto LABEL_34;
 
     if ( btif_trace_level > iLevelMessages)  LogMsg(1283, "TCP server accept ...\n");
-    clientfd = accept(hservSocket, &addr, &peer_addr_size);
+    clientfd = accept(hservSocket, (struct sockaddr *) &peer_addr, &peer_addr_size);
     if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "TCP server accept clientfd (%d)\n", clientfd);
     if ( clientfd != -1 )  break;
     if ( bExit )  goto LABEL_10;
@@ -149,7 +153,7 @@ LABEL_10:
     
     fds[1].events = 73;
     fds[1].revents = 0;
-    fds[1].fd = ctlsocket;
+    fds[1].fd = 0;
     
     if ( poll(fds, 2, -1) == -1 )
     {
@@ -193,7 +197,7 @@ LABEL_33:
     LogMsg(1283, v9);
   }
 LABEL_34:
-  return NULL;
+  return;
 }
 
 void bta_gps_rcv_vse_cback(UINT8 event, UINT8 *p_data) 

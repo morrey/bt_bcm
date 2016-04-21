@@ -224,7 +224,7 @@ signed int getServerPort()
 
 void start_tcp_server()
 {  
-  struct sockaddr addr; 
+  struct sockaddr_un un, peer_addr;
   int optval;
   optval = 1;
   bExit = 0;
@@ -232,28 +232,30 @@ void start_tcp_server()
   {
     if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] tcp service is already up\n");
   
-    hservSocket = socket(1, 1, 0);
+    hservSocket = socket(AF_UNIX, SOCK_STREAM, 0);
     int opt = setsockopt(hservSocket, 1, 2, &optval, 4);
     
     if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, opt);
-    addr.sa_family = 1;
+    un.sa_family = 1;
 
-    __strcpy_chk(addr.sa_data, getUnixSocketPath(), 108, optval);
-    unlink(addr.sa_data);
+    __strcpy_chk(un.sa_data, getUnixSocketPath(), 108, optval);
+    unlink(un.sa_data);
   
-    if (bind(hservSocket, (struct sockaddr *)&addr, __strlen_chk(addr.sa_data, 108) + 2) != -1 )
+    int ret = bind(hservSocket, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+    
+    if (ret != -1 )
     {
-		int chownResult = chown(getUnixSocketPath(), 0xFFFFFFFF, 0xBC0u);
-		if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chown %d, %s\n", chownResult, strerror(__errno()));
-		chownResult = chmod(getUnixSocketPath(), 0x1F8u);
-		if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chmod %d\n", chownResult, strerror(__errno()));
+	int Result = chown(getUnixSocketPath(), 0xFFFFFFFF, 0xBC0u);
+	if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chown %d\n", Result);
+	    Result = chmod(getUnixSocketPath(), 0x1F8u);
+	if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chmod %d\n",  Result);
     
         pthread_create(&ServThreadID, NULL, wait_4_command_thread, NULL);
         if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp listening thread id = %ld\n", ServThreadID);
     
         BTM_RegisterForVSEvents(bta_gps_rcv_vse_cback, true);
    
-    } else if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp bind socket failed errno = %d\n", strerror(__errno()));
+    } else if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp bind socket failed \n");
   }
 }
 

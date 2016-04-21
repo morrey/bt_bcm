@@ -236,12 +236,12 @@ void start_tcp_server()
     int opt = setsockopt(hservSocket, 1, 2, &optval, 4);
     
     if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, opt);
-    un.sa_family = 1;
+    un.sun_family = AF_UNIX;
 
     __strcpy_chk(un.sun_path, getUnixSocketPath(), 108, optval);
     unlink(un.sun_path);
   
-    int ret = bind(hservSocket, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+    int ret = bind(hservSocket, (struct sockaddr *)&un, sizeof(struct sockaddr_un));
     
     if (ret != -1 )
     {
@@ -298,5 +298,4 @@ void bta_gps_sm_execute(BT_HDR *p_msg)
   if      ( p_msg->event == 9472 ) bta_gps_enable();
   else if ( p_msg->event == 9473 ) bta_gps_disable();
   else if ( appl_trace_level > 1 ) LogMsg(1281, "bta_gps_sm_execute: unknown event 0x%x", p_msg->event);
-  
 }

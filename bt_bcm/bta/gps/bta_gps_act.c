@@ -238,8 +238,8 @@ void start_tcp_server()
     if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] start unix listening socket %d, set opt = %d\n", hservSocket, opt);
     un.sa_family = 1;
 
-    __strcpy_chk(un.sa_data, getUnixSocketPath(), 108, optval);
-    unlink(un.sa_data);
+    __strcpy_chk(un.sun_path, getUnixSocketPath(), 108, optval);
+    unlink(un.sun_path);
   
     int ret = bind(hservSocket, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
     

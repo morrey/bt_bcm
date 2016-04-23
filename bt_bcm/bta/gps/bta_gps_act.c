@@ -20,6 +20,7 @@ int hservSocket, clientfd;
 int ctlsocket = -1;
 pthread_t  ServThreadID;
 bool bReadyToQuit, bExit;
+int sockets[2];
 
 const int iLevelMessages = 1; 
 
@@ -253,6 +254,9 @@ void start_tcp_server()
 	if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chown %d\n", Result);
 	    Result = chmod(getUnixSocketPath(), 0x1F8u);
 	if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "[GPS] chmod %d\n",  Result);
+	
+	 if ( socketpair(1, 1, 0, &sockets) < 0 && btif_trace_level > iLevelMessages )
+        LogMsg(1283, "%s failed", "initCtrlSocekt");
     
         pthread_create(&ServThreadID, NULL, wait_4_command_thread, NULL);
         if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "tcp listening thread id = %ld\n", ServThreadID);

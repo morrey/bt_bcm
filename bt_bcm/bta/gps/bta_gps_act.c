@@ -201,21 +201,21 @@ LABEL_34:
   return;
 }
 
-void bta_gps_rcv_vse_cback(UINT8 event, UINT8 *p_data) 
+void bta_gps_rcv_vse_cback(UINT8 len, UINT8 *p_data) 
 //void bta_gps_rcv_vse_cback(tBTA_GPS_EVT event, tBTA_GPS *p_data)
 {
   if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "sizeof(p_data) is %s\n", sizeof(p_data));	 
 	
-  if ( (p_data) == 16 )
+  if ( p_data == 16 )
   {
-    event = clientfd;
+    len = clientfd;
     if ( clientfd > 0 )
     {
-      event = send(clientfd, p_data, event - 1, NULL) + 1;
-      if ( !event )
+      len = send(clientfd, p_data, len - 1, NULL) + 1;
+      if ( !len )
       {
         if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "send failed %s\n", strerror(__errno()));
-        event = -1;
+        len = -1;
         clientfd = -1;
       }
     }

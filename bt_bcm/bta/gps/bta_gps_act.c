@@ -202,11 +202,11 @@ LABEL_34:
 }
 
 void bta_gps_rcv_vse_cback(UINT8 len, UINT8 *p_data) 
-//void bta_gps_rcv_vse_cback(tBTA_GPS_EVT event, tBTA_GPS *p_data)
 {
-  if ( btif_trace_level > iLevelMessages ) LogMsg(1283, "sizeof(p_data) is %s\n", sizeof(p_data));	 
-	
-  if ( p_data == 16 )
+  UINT8 sub_event;
+  STREAM_TO_UINT8(sub_event, p_data);
+
+  if ( sub_event == 16 )
   {
     len = clientfd;
     if ( clientfd > 0 )
